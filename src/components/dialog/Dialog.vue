@@ -38,6 +38,9 @@
                                         ref="input"
                                         :class="{ 'is-danger': validationMessage }"
                                         v-bind="inputAttrs"
+                                        @compositionstart="compositionStart"
+                                        @compositionend="compositionEnd"
+                                        @keyup.tab="tabup"
                                         @keyup.enter="confirm">
                                 </div>
                                 <p class="help is-danger">{{ validationMessage }}</p>
@@ -154,6 +157,8 @@ export default {
         return {
             prompt,
             isActive: false,
+            isComposingStart: false,
+            isComposingEnd: false,
             validationMessage: ''
         }
     },
@@ -185,11 +190,33 @@ export default {
         }
     },
     methods: {
+        compositionStart() {
+            this.isComposingStart = true
+            this.isComposingEnd = false
+        },
+
+        compositionEnd(event) {
+            this.isComposingEnd = true
+        },
+
+        tabup() {
+            if (this.isComposingEnd) {
+                this.isComposingStart = false
+                this.isComposingEnd = false
+            }
+        },
+
         /**
         * If it's a prompt Dialog, validate the input.
         * Call the onConfirm prop (function) and close the Dialog.
         */
-        confirm() {
+        confirm(event = {}) {
+            if (this.isComposingStart || this.isComposingEnd) {
+                this.isComposingStart = false
+                this.isComposingEnd = false
+                return
+            }
+
             if (this.$refs.input !== undefined) {
                 if (!this.$refs.input.checkValidity()) {
                     this.validationMessage = this.$refs.input.validationMessage
@@ -197,6 +224,7 @@ export default {
                     return
                 }
             }
+
             this.onConfirm(this.prompt, this)
             if (this.closeOnConfirm) this.close()
         },
